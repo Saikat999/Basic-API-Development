@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -14,7 +17,7 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api', ['except' => ['login']]);
+        $this->middleware('auth:api', ['except' => ['login','register']]);
     }
 
     /**
@@ -79,5 +82,31 @@ class AuthController extends Controller
             'token_type' => 'bearer',
             'expires_in' => auth()->factory()->getTTL() * 60
         ]);
+    }
+
+    public function payload()
+    {
+        return auth()->payload();
+    }
+
+    public function register(Request $request)
+    {
+        $validateData = $request->validate([
+            'name' => ['required','string','max:255'],
+            'email' => ['required','string','email','max:255','unique:users'],
+            'password' => ['required','string','min:8','confirmed'],
+            
+        ]);
+
+        //Eloquent
+       $user = new User;
+       $user->name=$request->name;
+       $user->email=$request->email;
+       $user->password=Hash::make($request->password);
+       $user->save();
+
+       return $this->login($request);
+
+
     }
 }
